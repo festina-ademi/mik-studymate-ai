@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "StudyMate AI",
+    "tagline": "shoku yt i mësimit me inteligjencë artificiale",
+    "skipToContent": "Kalo te përmbajtja",
+    "goHome": "Faqja kryesore e StudyMate AI"
+  },
+  "header": {
+    "languageLabel": "Gjuha",
+    "themeLabel": "Tema"
+  },
+  "language": {
+    "sq": { "short": "SQ", "label": "Shqip (SQ)" },
+    "en": { "short": "EN", "label": "English (EN)" }
+  },
+  "theme": {
+    "system": "Sistemi",
+    "light": "E çelët",
+    "dark": "E errët"
+  },
+  "landing": {
+    "badge": "Version paraprak",
+    "title": "Mëso çdo leksion më shpejt.",
+    "subtitle": "Ngarko slajdet, PDF-të ose kodin burimor dhe merr përmbledhje të qarta, një tutor personal dhe kuize — në shqip ose në anglisht.",
+    "placeholderTitle": "Hapësira jote e punës po përgatitet",
+    "placeholderText": "Kthehu së shpejti: këtu do të ngarkosh materialet e tua dhe do të fillosh të mësosh."
+  },
+  "status": {
+    "checking": "Duke u lidhur me serverin…",
+    "connected": "Serveri është i lidhur",
+    "unavailable": "Serveri nuk është i arritshëm"
+  },
+  "notFound": {
+    "title": "Faqja nuk u gjet",
+    "text": "Lidhja që ndoqe nuk ekziston ose është zhvendosur.",
+    "backHome": "Kthehu në faqen kryesore"
+  },
+  "errors": {
+    "unknown": "Diçka shkoi keq. Provo përsëri.",
+    "network": "Serveri nuk arrihet. Kontrollo lidhjen dhe provo përsëri.",
+    "invalid_response": "Serveri ktheu një përgjigje të papritur.",
+    "unauthorized": "Duhet të identifikohesh për të vazhduar.",
+    "forbidden": "Nuk ke leje për këtë veprim.",
+    "not_found": "Nuk gjetëm atë që kërkove.",
+    "method_not_allowed": "Ky veprim nuk lejohet.",
+    "payload_too_large": "Skedari është shumë i madh.",
+    "validation_error": "Disa nga të dhënat nuk janë të vlefshme.",
+    "http_error": "Kërkesa dështoi. Provo përsëri.",
+    "internal_error": "Ndodhi një gabim në server. Provo përsëri pas pak."
+  }
+}

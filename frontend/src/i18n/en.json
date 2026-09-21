@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "StudyMate AI",
+    "tagline": "your AI study companion",
+    "skipToContent": "Skip to content",
+    "goHome": "StudyMate AI home"
+  },
+  "header": {
+    "languageLabel": "Language",
+    "themeLabel": "Theme"
+  },
+  "language": {
+    "sq": { "short": "SQ", "label": "Shqip (SQ)" },
+    "en": { "short": "EN", "label": "English (EN)" }
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "landing": {
+    "badge": "Early preview",
+    "title": "Learn any lecture faster.",
+    "subtitle": "Upload your slides, PDFs or source code and get clear summaries, a personal tutor and quizzes — in English or Albanian.",
+    "placeholderTitle": "Your workspace is being prepared",
+    "placeholderText": "Check back soon: this is where you will upload your material and start learning."
+  },
+  "status": {
+    "checking": "Connecting to the server…",
+    "connected": "Backend connected",
+    "unavailable": "Backend unavailable"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "The link you followed does not exist or has moved.",
+    "backHome": "Back to the home page"
+  },
+  "errors": {
+    "unknown": "Something went wrong. Please try again.",
+    "network": "The server cannot be reached. Check your connection and try again.",
+    "invalid_response": "The server sent an unexpected response.",
+    "unauthorized": "You need to sign in to continue.",
+    "forbidden": "You do not have permission to do this.",
+    "not_found": "We could not find what you asked for.",
+    "method_not_allowed": "This action is not allowed.",
+    "payload_too_large": "The file is too large.",
+    "validation_error": "Some of the information is not valid.",
+    "http_error": "The request failed. Please try again.",
+    "internal_error": "A server error occurred. Please try again in a moment."
+  }
+}

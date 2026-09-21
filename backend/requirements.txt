@@ -1,0 +1,14 @@
+﻿# Runtime
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+SQLAlchemy==2.0.54
+google-genai==2.24.0
+openai==3.16.2
+httpx==0.28.1
+
+# Development and testing
+pytest==9.1.1
+httpx2==2.13.0
+ruff==0.16.8

@@ -1,0 +1,1 @@
+Always read and follow PROJECT_SPEC.md completely before doing anything in this repository. Work on ONE phase at a time, only when I give you a phase prompt. Do not build features from later phases. After finishing a phase, run all tests, linters and the build, fix every problem, and report what you did.

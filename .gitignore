@@ -1,0 +1,38 @@
+# --- Secrets and local configuration ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# --- Node ---
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+.vite/
+
+# --- Runtime data: databases, vector store, uploads, generated audio ---
+backend/data/
+chroma/
+uploads/
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Editors and OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
