@@ -7,6 +7,7 @@ import { App } from './App';
 import './i18n';
 import { createQueryClient } from './lib/queryClient';
 import './styles/index.css';
+import './styles/print.css';
 
 const queryClient = createQueryClient();
 const container = document.getElementById('root');

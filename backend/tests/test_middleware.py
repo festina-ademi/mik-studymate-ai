@@ -125,6 +125,28 @@ def test_rate_limiting_can_be_disabled() -> None:
     assert [client.get("/api/_test/ping").status_code for _ in range(5)] == [200] * 5
 
 
+def test_path_limiters_are_wired_up_for_the_real_tts_synthesize_endpoint() -> None:
+    """Integration test: `app.main.create_app` actually applies a tighter limit to
+    `/api/tts/synthesize` than the general one, on top of it rather than instead of it."""
+    from app.api.tts import TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE
+
+    client = make_client(
+        rate_limit_requests=1000,  # generous, so only the path-specific limit can trip here
+        feature_server_tts=False,  # synthesize fast-fails with 503 before any model is touched
+    )
+
+    payload = {"text": "Hello.", "language": "en"}
+    statuses = [
+        client.post("/api/tts/synthesize", json=payload).status_code
+        for _ in range(TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE + 1)
+    ]
+
+    assert statuses[:-1] == [503] * TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE
+    assert statuses[-1] == 429
+    # A different, unrelated route is still governed only by the general (much higher) limit.
+    assert client.get("/api/_test/ping").status_code == 200
+
+
 # --- request size -----------------------------------------------------------------------
 
 

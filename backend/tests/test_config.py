@@ -72,3 +72,16 @@ def test_cors_allows_configured_origin_only() -> None:
 
     assert allowed.headers["access-control-allow-origin"] == "http://localhost:5173"
     assert "access-control-allow-origin" not in denied.headers
+
+
+def test_blank_optional_values_from_env_example_are_treated_as_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Copying .env.example verbatim leaves these blank; that must not crash startup."""
+    monkeypatch.setenv("STUDY_RETENTION_DELAY_DEV_MINUTES", "")
+    monkeypatch.setenv("MOCK_LLM_FIXTURES_PATH", "")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.study_retention_delay_dev_minutes is None
+    assert settings.mock_llm_fixtures_path is None

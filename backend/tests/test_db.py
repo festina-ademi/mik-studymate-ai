@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db.models import (
+    AdaptationAction,
+    AdaptationEvent,
     Chunk,
     Document,
     ExplainerScript,
@@ -24,7 +26,7 @@ from app.db.models import (
     TutorMessage,
 )
 from app.db.session import SessionFactory, create_engine, get_session, init_db
-from app.domain import ContentType, Language, Level, Task
+from app.domain import ContentType, Difficulty, Language, Level, Task
 from app.main import create_app
 
 EXPECTED_TABLES = {
@@ -35,8 +37,19 @@ EXPECTED_TABLES = {
     "quiz_questions",
     "quiz_attempts",
     "topic_mastery",
+    "adaptation_events",
     "tutor_messages",
     "explainer_scripts",
+    "user_quota_usage",
+    # Study Mode (see app.study.models), sharing this same Base/metadata.
+    "study_materials",
+    "study_tests",
+    "test_items",
+    "participants",
+    "test_submissions",
+    "questionnaire_responses",
+    "usage_events",
+    "admin_sessions",
 }
 
 
@@ -56,11 +69,10 @@ def count(session: Session, model: type) -> int:
     return session.scalar(select(func.count()).select_from(model)) or 0
 
 
-def test_only_the_core_tables_exist_and_no_study_mode_tables(engine: Engine) -> None:
+def test_exactly_the_expected_tables_exist(engine: Engine) -> None:
     tables = set(inspect(engine).get_table_names())
 
     assert tables == EXPECTED_TABLES
-    assert not any("participant" in name or "study" in name for name in tables)
 
 
 def test_a_full_object_graph_round_trips(session_factory: SessionFactory) -> None:
@@ -76,6 +88,8 @@ def test_a_full_object_graph_round_trips(session_factory: SessionFactory) -> Non
                 ordinal=0,
                 kind=QuestionKind.MULTIPLE_CHOICE,
                 topic="Search",
+                difficulty=Difficulty.MEDIUM,
+                language=Language.SQ,
                 question="What is binary search?",
                 options=["a", "b", "c"],
                 correct_answer="b",
@@ -86,6 +100,14 @@ def test_a_full_object_graph_round_trips(session_factory: SessionFactory) -> Non
         quiz.questions[0].attempts = [QuizAttempt(answer="b", is_correct=True)]
         document.quiz_sets = [quiz]
         document.topic_mastery = [TopicMastery(topic="Search", attempts=1, correct=1, mastery=1.0)]
+        document.adaptation_events = [
+            AdaptationEvent(
+                topic="Search",
+                mastery_before=0.4,
+                mastery_after=1.0,
+                action=AdaptationAction.QUIZ_ANSWER,
+            )
+        ]
         document.tutor_messages = [
             TutorMessage(role=MessageRole.USER, content="Pse?", language=Language.SQ),
             TutorMessage(
@@ -123,6 +145,8 @@ def test_a_full_object_graph_round_trips(session_factory: SessionFactory) -> Non
         assert question.options == ["a", "b", "c"]
         assert question.attempts[0].is_correct is True
         assert loaded.topic_mastery[0].mastery == 1.0
+        assert loaded.adaptation_events[0].action is AdaptationAction.QUIZ_ANSWER
+        assert loaded.adaptation_events[0].mastery_before == 0.4
         assert [m.role for m in loaded.tutor_messages] == [MessageRole.USER, MessageRole.ASSISTANT]
         assert loaded.tutor_messages[1].citations == [{"page": 1}]
         assert loaded.explainer_scripts[0].simplified is False
@@ -139,6 +163,8 @@ def test_deleting_a_document_deletes_everything_that_belongs_to_it(
             ordinal=0,
             kind=QuestionKind.SHORT_ANSWER,
             topic="t",
+            difficulty=Difficulty.EASY,
+            language=Language.EN,
             question="q",
             correct_answer="a",
         )
@@ -146,6 +172,14 @@ def test_deleting_a_document_deletes_everything_that_belongs_to_it(
         quiz.questions = [question]
         document.quiz_sets = [quiz]
         document.topic_mastery = [TopicMastery(topic="t")]
+        document.adaptation_events = [
+            AdaptationEvent(
+                topic="t",
+                mastery_before=0.0,
+                mastery_after=1.0,
+                action=AdaptationAction.QUIZ_ANSWER,
+            )
+        ]
         document.tutor_messages = [
             TutorMessage(role=MessageRole.USER, content="?", language=Language.EN)
         ]
@@ -155,7 +189,15 @@ def test_deleting_a_document_deletes_everything_that_belongs_to_it(
         session.delete(document)
         session.commit()
 
-        for model in (Chunk, QuizSet, QuizQuestion, QuizAttempt, TopicMastery, TutorMessage):
+        for model in (
+            Chunk,
+            QuizSet,
+            QuizQuestion,
+            QuizAttempt,
+            TopicMastery,
+            AdaptationEvent,
+            TutorMessage,
+        ):
             assert count(session, model) == 0, model.__name__
 
 

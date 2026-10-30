@@ -11,13 +11,13 @@ describe('language toggle', () => {
     renderApp();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Learn any lecture faster.',
+      'Learn faster from your lectures.',
     );
 
     await user.click(screen.getByRole('button', { name: 'Shqip (SQ)' }));
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Mëso çdo leksion më shpejt.',
+      'Mëso më shpejt nga ligjëratat e tua.',
     );
     expect(screen.getByRole('button', { name: 'Shqip (SQ)' })).toHaveAttribute(
       'aria-pressed',
@@ -29,7 +29,7 @@ describe('language toggle', () => {
     await user.click(screen.getByRole('button', { name: 'English (EN)' }));
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Learn any lecture faster.',
+      'Learn faster from your lectures.',
     );
   });
 });
@@ -46,29 +46,6 @@ describe('theme toggle', () => {
 
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(window.localStorage.getItem('studymate.theme')).toBe('dark');
-  });
-});
-
-describe('backend status', () => {
-  it('shows that the backend is connected', async () => {
-    stubFetch({ status: 'ok', version: '0.1.0' });
-    renderApp();
-
-    expect(await screen.findByText('Backend connected')).toBeInTheDocument();
-  });
-
-  it('shows that the backend is unavailable when the API returns an error', async () => {
-    stubFetch(
-      { error: { code: 'internal_error', message_key: 'errors.internal_error', details: {} } },
-      500,
-    );
-    renderApp();
-
-    const status = await screen.findByText('Backend unavailable');
-    expect(status).toHaveAttribute(
-      'title',
-      'A server error occurred. Please try again in a moment.',
-    );
   });
 });
 

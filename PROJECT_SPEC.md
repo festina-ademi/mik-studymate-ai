@@ -63,8 +63,8 @@ studymate-ai/
 
 ## 5. Language rules (critical)
 - The user picks ONE language (Albanian "sq" or English "en") with an SQ | EN toggle. Persist it.
-- Everything follows that language: UI text, error messages, summaries, explanations, quizzes, tutor answers,
-  avatar scripts, captions, voice, Study Mode texts.
+- Everything follows that language: UI text, error messages, summaries, explanations, quizzes, avatar scripts,
+  captions, voice, Study Mode texts. The tutor/chat is the one exception — see the rule below.
 - Output language is independent of the document language: an English PDF can be explained in Albanian.
 - Source code, identifiers, keywords and code blocks are never translated. Only the explanation around them.
 - In Albanian use established Albanian technical terms (algoritëm, bazë të dhënash, ndryshore, funksion,
@@ -72,7 +72,12 @@ studymate-ai/
   Never mix the two languages inside one sentence beyond such terms.
 - No hardcoded user-facing strings anywhere: all text lives in i18n files (frontend) or prompt/message
   templates keyed by language (backend). Backend errors return machine codes; the frontend translates them.
-- The tutor always answers in the selected language even if the question is typed in the other.
+- The tutor/chat answers in the language the learner's question was typed in for that turn, even
+  when that differs from the selected interface language (detected per message via `lingua`,
+  falling back to the interface language only when the question is too short or linguistically
+  ambiguous to detect with confidence — see `resolve_question_language` in `app/prompts/builder.py`).
+  This is a deliberate exception: Summary, Explanation, Quiz and weak-topic re-explanation are
+  not question-driven and still always follow the selected interface language.
 
 ## 6. Personalization rules
 - Levels: beginner (analogies, no jargon, step by step), intermediate (standard terminology, key details),
@@ -102,9 +107,14 @@ numbers written naturally). Scripts are generated ahead of playback (prefetch ne
 within seconds. Controls: play/pause, speed 1x/1.25x/1.5x, previous/next, section list with progress,
 captions on by default, "Ask" (pauses, opens a mini tutor, then resumes), "Explain simpler", and a 2-3
 question mini-quiz after each section. The viewer beside the avatar shows the relevant page/slide.
-Voice: browser speechSynthesis by default (split into sentence-sized utterances, detect missing voices and warn),
-optional server-side TTS (Meta MMS-TTS models facebook/mms-tts-sqi and facebook/mms-tts-eng) behind a
-feature flag, with audio cached by hash. Avatar: original animated SVG/CSS mascot (no copyrighted characters)
+Voice: server-side neural TTS (Meta MMS-TTS models facebook/mms-tts-sqi and facebook/mms-tts-eng, served from
+the backend, audio cached on disk by a hash of text + language + model version) is the primary voice, so
+Albanian narration sounds natural rather than robotic. The browser's own speechSynthesis is an automatic,
+silent fallback used only when the server voice is unavailable, times out, or fails for any other reason —
+split into sentence-sized utterances, detecting missing voices rather than erroring. Speed (1x/1.25x/1.5x)
+is applied as the `<audio>` element's playbackRate for the server voice (no re-fetch); the browser engine
+restarts the current utterance at the new rate instead, since speechSynthesis has no live rate control.
+Avatar: original animated SVG/CSS mascot (no copyrighted characters)
 with states idle / thinking / speaking / happy / encouraging; mouth animation driven by audio amplitude when
 audio files exist, otherwise a timed speaking animation. Respect prefers-reduced-motion.
 

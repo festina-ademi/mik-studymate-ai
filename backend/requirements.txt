@@ -4,11 +4,40 @@ uvicorn[standard]==0.53.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 SQLAlchemy==2.0.54
+# Postgres driver: only imported when DATABASE_URL points at Postgres (postgresql+psycopg://...),
+# e.g. a free-tier host like Neon or Supabase in production, since a typical free web host's disk
+# is ephemeral and SQLite would lose all data on every restart/redeploy. SQLite (the default) needs
+# no driver at all. See docs/DEPLOYMENT.md.
+psycopg[binary]==3.3.1
 google-genai==2.24.0
 openai==3.16.2
 httpx==0.28.1
+python-multipart==0.0.32
+pypdf==6.19.0
+python-pptx==1.0.2
+lingua-language-detector==2.2.0
+reportlab==4.4.4
+chromadb==1.5.9
+sentence-transformers==6.1.0
+scipy==1.18.1
+# torch is sentence-transformers' heaviest dependency. Install the small CPU-only wheel first
+# (`pip install --index-url https://download.pytorch.org/whl/cpu torch==2.9.1`) so this file's
+# plain `pip install -r requirements.txt` finds it already satisfied instead of pulling PyPI's
+# much larger default CUDA-enabled build. See README for the full setup command.
+torch==2.9.1
+
+# Phase 4c: Meta MMS-TTS (server-side neural voice for the Avatar tab), on by default
+# (FEATURE_SERVER_TTS=true). transformers loads VitsModel/AutoTokenizer for
+# facebook/mms-tts-sqi and facebook/mms-tts-eng, lazily on first synthesis, not at startup.
+# scipy is already pulled in above (sentence-transformers); soundfile is a more reliable WAV
+# encoder than scipy alone and is used for the actual PCM write. Both are optional in the sense
+# that the app still runs and falls back to the browser's speechSynthesis voice if either is
+# missing or synthesis fails for any reason (model not loaded, timeout, disk full).
+transformers==5.17.0
+soundfile==0.13.1
 
 # Development and testing
 pytest==9.1.1
 httpx2==2.13.0
 ruff==0.16.8
+tzdata==2026.4

@@ -5,47 +5,84 @@
 /* The theme is stored on <html data-theme="light|dark">; see lib/theme.ts. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* Design tokens. Light theme is the default; dark overrides the same names. */
+/* Design tokens. Light theme is the default; dark overrides the same names.
+   --primary/--primary-hover (light) were darkened in the Phase 10 accessibility pass: the
+   original #c57d2f only reached a 3.19:1 contrast ratio against --primary-contrast, short of
+   WCAG AA's 4.5:1 for normal-size text such as a primary button's label. The dark theme's
+   --primary (#f5b55c, 10.18:1) already passed and was left unchanged. */
 :root {
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --border: #e2e8f0;
-  --fg: #0f172a;
-  --fg-muted: #475569;
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-contrast: #ffffff;
-  --primary-soft: #eef2ff;
-  --primary-soft-fg: #4338ca;
-  --success: #15803d;
-  --warning: #b45309;
-  --error: #b91c1c;
-  --ring: #6366f1;
-  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
+  /* --bg was deepened one notch (from #f7f0e5) in the Phase 1.5 background clean-up: still warm
+     cream/oat (never gray — red/blue channels stay ~27 apart), just a touch richer so the page
+     doesn't read as stark white. --paper-grain (the removed grid texture's color) went with it;
+     see the removed `body::before` rule below. */
+  --bg: #f0e7d5;
+  --surface: #fffaf4;
+  --surface-muted: #f3e7d8;
+  --border: #d9c2a2;
+  --fg: #2f241d;
+  --fg-muted: #5d4d42;
+  --primary: #9c6325;
+  --primary-hover: #84541f;
+  --primary-contrast: #fffaf4;
+  --primary-soft: #f5e3c8;
+  --primary-soft-fg: #7a4318;
+  --secondary: #d98058;
+  --secondary-soft: #f6dfd0;
+  --secondary-soft-fg: #7a3f27;
+  --success: #5a8266;
+  --warning: #bf7a2b;
+  --error: #b75f4e;
+  --ring: #d79a4a;
+  --shadow-soft: 0 1px 2px rgb(73 52 36 / 0.06), 0 16px 30px rgb(92 62 40 / 0.12);
+  --paper-glow: rgba(245, 181, 92, 0.2);
+  --paper-glow-strong: rgba(222, 151, 62, 0.14);
+  /* StudyAvatar (Phase 4b): a warm neutral illustration palette, separate from the UI tokens
+     above. Skin/hair/ink are drawn ON the avatar's own skin tone, not on the page background,
+     so they intentionally do NOT invert the way --fg/--bg do between themes — only nudged a
+     touch brighter (skin, hair) or richer (ink) in dark mode for comfortable contrast against
+     the darker page around it. --avatar-eye-white stays light in both themes for the same
+     reason real eye whites don't change with room lighting. */
+  --avatar-skin: #e3b78a;
+  --avatar-skin-shade: #c99968;
+  --avatar-hair: #5a3823;
+  --avatar-ink: #3a2414;
+  --avatar-eye-white: #fff8ee;
 }
 
 :root[data-theme='dark'] {
-  --bg: #0b1120;
-  --surface: #151e32;
-  --surface-muted: #1c2740;
-  --border: #2a3652;
-  --fg: #f1f5f9;
-  --fg-muted: #a3b1c6;
-  --primary: #818cf8;
-  --primary-hover: #a5b4fc;
-  --primary-contrast: #0b1120;
-  --primary-soft: #1f2350;
-  --primary-soft-fg: #c7d2fe;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --error: #f87171;
-  --ring: #a5b4fc;
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.35);
+  /* Same deepening as light mode's --bg, one notch down from #1b1513, warmth ratio preserved. */
+  --bg: #171210;
+  --surface: #261f1c;
+  --surface-muted: #312926;
+  --border: #57463d;
+  --fg: #f4ebdf;
+  --fg-muted: #d5b89a;
+  --primary: #f5b55c;
+  --primary-hover: #f9ce81;
+  --primary-contrast: #1d120d;
+  --primary-soft: #4a382d;
+  --primary-soft-fg: #f8d9a5;
+  --secondary: #e38d63;
+  --secondary-soft: #5b4034;
+  --secondary-soft-fg: #f7c8a3;
+  --success: #7da383;
+  --warning: #e09b45;
+  --error: #d9786b;
+  --ring: #f8c879;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.28), 0 18px 32px rgb(0 0 0 / 0.38);
+  --paper-glow: rgba(245, 181, 92, 0.17);
+  --paper-glow-strong: rgba(245, 181, 92, 0.12);
+  --avatar-skin: #eec89b;
+  --avatar-skin-shade: #d6aa78;
+  --avatar-hair: #7c5636;
+  --avatar-ink: #2b1c10;
+  --avatar-eye-white: #f7ead8;
 }
 
 /* Tailwind theme extensions: utilities such as bg-surface, text-fg-muted, shadow-soft. */
 @theme inline {
+  /* Width at which the header shows the full desktop navigation instead of the hamburger menu. */
+  --breakpoint-nav: 84rem;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
@@ -57,6 +94,9 @@
   --color-primary-contrast: var(--primary-contrast);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-soft-fg: var(--secondary-soft-fg);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
@@ -69,6 +109,7 @@
 @layer base {
   html {
     color-scheme: light;
+    background-color: var(--bg);
   }
 
   html[data-theme='dark'] {
@@ -76,11 +117,86 @@
   }
 
   body {
+    position: relative;
     margin: 0;
     background-color: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Phase 1.5: the crosshatch grid texture that used to live in a `body::before` pseudo-element
+       here was removed for a flat, distraction-free background; only the lamp glow remains. */
+    background-image:
+      radial-gradient(circle at 20% 12%, var(--paper-glow), transparent 34%),
+      radial-gradient(circle at 80% 16%, rgba(217, 128, 88, 0.08), transparent 26%);
+  }
+
+  #root,
+  main,
+  .app-shell,
+  .landing-shell {
+    position: relative;
+    isolation: isolate;
+    z-index: 1;
+  }
+
+  .landing-shell::before {
+    content: '';
+    position: absolute;
+    inset: -10% -12% auto auto;
+    width: 38rem;
+    height: 38rem;
+    border-radius: 9999px;
+    background: radial-gradient(
+      circle,
+      var(--paper-glow) 0%,
+      rgba(245, 181, 92, 0.14) 24%,
+      transparent 68%
+    );
+    filter: blur(44px);
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Bug fix: this sheen's `::before` is `position: absolute; inset: 0`, which only stays inside
+     its own element if that element is itself positioned. `.bg-surface`/`.bg-surface-muted` are
+     plain background-color utilities with no position of their own (most Card-based content,
+     buttons and message bubbles), so without this rule their `::before` fell through to the
+     nearest positioned ancestor — `main` — and covered the *entire* page at 55% opacity. Every
+     such element on the page stacked its own full-page copy, so the more of them mounted (more
+     chat messages, more quiz cards, more sections scrolled into view), the hazier the page
+     looked; a Tailwind `absolute`/`fixed`/`relative` utility on a specific instance still wins
+     over this (utilities layer > base layer), so already-correctly-positioned elements such as
+     the SegmentedControl's sliding indicator are unaffected. */
+  .app-shell__main,
+  .page-surface,
+  .bg-surface,
+  .bg-surface-muted {
+    position: relative;
+  }
+
+  .app-shell__main::before,
+  .page-surface::before,
+  .bg-surface::before,
+  .bg-surface-muted::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .bg-surface,
+  .bg-surface-muted,
+  .rounded-2xl,
+  .rounded-\[1\.75rem\],
+  .rounded-\[2rem\],
+  .rounded-\[1\.5rem\],
+  .rounded-xl {
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(245, 181, 92, 0.02));
+    background-attachment: local;
   }
 
   :focus-visible {
@@ -97,5 +213,92 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Explainer Mode avatar. The reduced-motion rule above already collapses every duration to
+   near-zero, so these keyframes need no separate reduced-motion handling of their own. */
+@keyframes mascot-idle-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes mascot-think-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes mascot-talk {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes mascot-happy-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    transform: translateY(-6px) scale(1.05);
+  }
+  60% {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+/* "How it works" numbered badges: a soft amber ring pulsing outward, staggered per badge via an
+   inline `animation-delay` so the three fire in a wave. Reused --primary rather than a hardcoded
+   amber so it still tracks the theme in dark mode. Like the mascot keyframes above, the global
+   reduced-motion rule already collapses this to nothing, so it needs no separate handling here. */
+@keyframes badge-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+@layer utilities {
+  .animate-badge-pulse {
+    animation: badge-pulse 2s ease-out infinite;
+  }
+
+  .animate-mascot-idle-bob {
+    animation: mascot-idle-bob 2.6s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .animate-mascot-think-pulse {
+    animation: mascot-think-pulse 0.9s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .animate-mascot-talk {
+    animation: mascot-talk 0.42s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .animate-mascot-happy-bounce {
+    animation: mascot-happy-bounce 0.7s ease-in-out 1;
+    transform-box: fill-box;
+    transform-origin: center;
   }
 }

@@ -309,3 +309,26 @@ def test_sample_from_schema_handles_optionals_refs_and_bounds() -> None:
         "color": "red",
         "items": [{"name": "mock", "count": 1}],
     }
+
+
+@pytest.mark.anyio
+async def test_schema_responses_override_the_default_sampler_by_schema_name() -> None:
+    """schema_responses is keyed by schema name, not call order (see MockProvider's docstring):
+    it stays correct across a multi-step flow no matter how many times a schema is requested."""
+    fixed = '{"title": "Fixed", "color": "blue", "items": [{"name": "x", "count": 3}]}'
+    provider = MockProvider(schema_responses={"Basket": fixed})
+
+    first = await provider.generate_json("p", Basket)
+    second = await provider.generate_json("p", Basket)
+
+    assert (first.title, second.title) == ("Fixed", "Fixed")
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.anyio
+async def test_schema_responses_only_apply_to_matching_schema_names() -> None:
+    provider = MockProvider(schema_responses={"SomeOtherSchema": "{}"})
+
+    basket = await provider.generate_json("p", Basket)
+
+    assert basket.items  # fell through to the default sampler, unaffected by the unrelated entry

@@ -1,8 +1,12 @@
-import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
-/** Placeholder logo: a rounded mark next to the product name. */
+/**
+ * The MIK logo (bot mark with its "MIK" wordmark), linking home. The artwork is near-black on a
+ * transparent background, so the dark theme inverts it to white rather than needing a second
+ * file; `logo-cropped.png` is `logo.png` with its empty margins trimmed, so the mark stays
+ * legible at header size.
+ */
 export function Logo() {
   const { t } = useTranslation();
 
@@ -10,12 +14,15 @@ export function Logo() {
     <Link
       to="/"
       aria-label={t('app.goHome')}
-      className="flex items-center gap-2 rounded-xl text-fg"
+      className="inline-flex items-center rounded-2xl transition-transform duration-200 hover:-translate-y-0.5"
     >
-      <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-contrast">
-        <Sparkles aria-hidden className="size-5" />
-      </span>
-      <span className="hidden text-lg font-semibold tracking-tight sm:inline">{t('app.name')}</span>
+      <img
+        src="/images/logo-cropped.png"
+        alt={t('app.name')}
+        width={441}
+        height={575}
+        className="h-12 w-auto dark:invert"
+      />
     </Link>
   );
 }

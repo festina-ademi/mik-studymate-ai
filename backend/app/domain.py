@@ -26,7 +26,34 @@ class ContentType(StrEnum):
 
 
 class Task(StrEnum):
-    """Generation tasks that have a prompt template. Later phases add more members."""
+    """Generation tasks that have a prompt template."""
 
     SUMMARY = "summary"
     EXPLANATION = "explanation"
+    QUIZ = "quiz"
+    TUTOR = "tutor"
+    REEXPLAIN = "reexplain"
+    EXPLAINER = "explainer"
+
+
+class ExplanationDepth(StrEnum):
+    """How finely a code explanation breaks the source down (lectures ignore this)."""
+
+    LINE_BY_LINE = "line-by-line"
+    BLOCKS = "blocks"
+
+
+class Difficulty(StrEnum):
+    """Quiz question difficulty, normally following the learner's selected level."""
+
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class MasteryLevel(StrEnum):
+    """Classification of a topic's running mastery score, for the UI and the tutor profile."""
+
+    WEAK = "weak"
+    DEVELOPING = "developing"
+    STRONG = "strong"

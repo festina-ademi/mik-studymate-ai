@@ -23,6 +23,11 @@ coverage/
 npm-debug.log*
 .vite/
 
+# --- Playwright (frontend/e2e) ---
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
 # --- Runtime data: databases, vector store, uploads, generated audio ---
 backend/data/
 chroma/

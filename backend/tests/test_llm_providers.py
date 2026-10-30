@@ -1,7 +1,9 @@
 """Gemini and OpenAI providers: error translation and behavior against fake SDK clients."""
 
 import asyncio
+import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -27,8 +29,10 @@ from app.llm import (
     RetryPolicy,
     create_provider,
 )
+from app.llm.concurrency import ConcurrencyLimitedProvider
 from app.llm.gemini import GeminiProvider, translate_gemini_error
 from app.llm.openai_provider import OpenAIProvider, translate_openai_error
+from app.llm.usage import UsageTrackingProvider
 
 # --- Gemini: error translation ----------------------------------------------------------
 
@@ -483,9 +487,23 @@ def test_factory_builds_the_configured_provider_with_model_names_from_settings()
     )
     mock = create_provider(settings_for(llm_provider="mock"))
 
-    assert (type(gemini), gemini.model) == (GeminiProvider, "g-model")
-    assert (type(chat), chat.model) == (OpenAIProvider, "o-model")
-    assert isinstance(mock, MockProvider)
+    # The factory wraps every provider in usage counting (see app.llm.usage) around a concurrency
+    # cap (see app.llm.concurrency), so the outer type is always UsageTrackingProvider; the
+    # underlying provider is checked through its delegated `.name` and the private `._inner`
+    # references instead of the outer type.
+    assert (type(gemini), gemini.model, gemini.name) == (
+        UsageTrackingProvider,
+        "g-model",
+        "gemini",
+    )
+    assert (type(chat), chat.model, chat.name) == (
+        UsageTrackingProvider,
+        "o-model",
+        "openai",
+    )
+    assert isinstance(mock, UsageTrackingProvider)
+    assert isinstance(mock._inner, ConcurrencyLimitedProvider)  # noqa: SLF001 - wrapped provider
+    assert isinstance(mock._inner._inner, MockProvider)  # noqa: SLF001 - same reason
 
 
 def test_factory_passes_llm_settings_to_the_provider() -> None:
@@ -518,3 +536,23 @@ def test_factory_requires_an_api_key_for_real_providers(name: str) -> None:
 
 def test_default_temperature_is_low() -> None:
     assert create_provider(settings_for(llm_provider="mock")).temperature == 0.2
+
+
+class _FixtureSchema(BaseModel):
+    title: str = ""
+
+
+@pytest.mark.anyio
+async def test_mock_provider_loads_schema_fixtures_from_the_configured_path(tmp_path: Path) -> None:
+    fixtures_path = tmp_path / "fixtures.json"
+    fixtures_path.write_text(
+        json.dumps({"_FixtureSchema": {"title": "From fixture"}}), encoding="utf-8"
+    )
+
+    provider = create_provider(
+        settings_for(llm_provider="mock", mock_llm_fixtures_path=fixtures_path)
+    )
+
+    result = await provider._inner.generate_json("p", _FixtureSchema)  # noqa: SLF001 - reach the mock
+
+    assert result.title == "From fixture"

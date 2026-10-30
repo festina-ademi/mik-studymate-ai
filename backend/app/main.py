@@ -4,6 +4,7 @@ Run with ``uvicorn app.main:app --reload`` from the ``backend/`` folder.
 """
 
 import logging
+import os
 import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -14,11 +15,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api.router import api_router
+from app.api.tts import TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE
 from app.config import Settings, get_settings
 from app.db.session import create_engine, create_session_factory, init_db
 from app.errors import register_exception_handlers
 from app.logging_config import configure_logging
-from app.middleware import RateLimitMiddleware, RequestSizeLimitMiddleware, SlidingWindowLimiter
+from app.middleware import (
+    QuotaMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SlidingWindowLimiter,
+)
 
 request_logger = logging.getLogger("app.request")
 
@@ -64,7 +71,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
 
+    # Must happen before anything imports `transformers` or `sentence-transformers` (both read
+    # HF_HOME from the environment, once, the first time huggingface_hub is touched): neither is
+    # imported yet at this point in the factory, so setting it here reliably lands before either
+    # ever is. `setdefault` respects an HF_HOME the environment already set outside the app.
+    os.environ.setdefault("HF_HOME", str(settings.hf_home.resolve()))
+
     engine = create_engine(settings.database_url)
+    init_db(engine)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -72,16 +86,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         engine.dispose()
 
-    app = FastAPI(title="StudyMate AI", version=__version__, lifespan=lifespan)
+    app = FastAPI(title=" MIK-StudyMate AI", version=__version__, lifespan=lifespan)
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
-    app.state.llm_provider = None  # built on first use, see app.llm.factory.get_llm_provider
+    app.state.llm_provider = None 
+    app.state.embedding_provider = None  
+    app.state.vector_store = None  
+    app.state.tts_provider = None 
 
     register_exception_handlers(app)
 
-    # Middleware runs outermost-first, i.e. in reverse order of registration: logging, then
-    # CORS (so that even 429/413 responses carry CORS headers), then the request protections.
+ 
+    app.add_middleware(
+        QuotaMiddleware,
+        session_factory=app.state.session_factory,
+        daily_ai_requests=settings.quota_daily_gemini_requests,
+        daily_uploads=settings.quota_daily_uploads,
+    )
     app.add_middleware(
         RequestSizeLimitMiddleware,
         json_limit=settings.max_json_body_bytes,
@@ -93,6 +115,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             limiter=SlidingWindowLimiter(
                 settings.rate_limit_requests, settings.rate_limit_window_seconds
             ),
+            
+            path_limiters={
+                "/api/tts/synthesize": SlidingWindowLimiter(
+                    TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE, 60.0
+                )
+            },
         )
     app.add_middleware(
         CORSMiddleware,

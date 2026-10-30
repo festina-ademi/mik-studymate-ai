@@ -23,7 +23,11 @@ _REPLAY_CHUNK_CHARS = 64
 
 @dataclass(frozen=True)
 class CacheKey:
-    """Everything that determines a generated answer."""
+    """Everything that determines a generated answer.
+
+    ``extra`` discriminates content that also varies by something beyond the usual axes, e.g.
+    a weak-topic re-explanation caches separately per topic name.
+    """
 
     document_hash: str
     task: Task
@@ -31,6 +35,7 @@ class CacheKey:
     language: Language
     model: str
     prompt_version: str = PROMPT_VERSION
+    extra: str = ""
 
     def digest(self) -> str:
         """Stable SHA-256 of the key parts (joined with a separator that cannot occur in them)."""
@@ -41,6 +46,7 @@ class CacheKey:
             self.language.value,
             self.model,
             self.prompt_version,
+            self.extra,
         )
         return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()
 

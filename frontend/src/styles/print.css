@@ -1,0 +1,101 @@
+/* PDF export (PrintableSection + PrintButton): "download as PDF" is the browser's own print
+   dialog with "Save as PDF" as a destination, so it needs no client library and no server-side
+   renderer. At most one `.print-area` is ever printable at a time (Summary, Explanation and the
+   quiz results are mutually exclusive tabs), so one global rule set is enough.
+
+   Everything that neither is, contains, nor sits inside the `.print-area` is removed with
+   `display: none` -- not `visibility: hidden`, which keeps the hidden UI's full size on paper (a
+   blank first page) -- and the section's ancestors lose every scroll box, fixed height and
+   position, so the whole section flows across as many pages as it needs instead of being
+   clipped to the on-screen panel. Inside it, theme colors (including dark mode and the code
+   highlighter's inline token colors) give way to plain black-on-white ink. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
+
+  body *:not(:has(.print-area)):not(.print-area):not(.print-area *) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  :has(.print-area) {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    background: #fff !important;
+  }
+
+  .print-area {
+    color: #000 !important;
+    background: #fff !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .print-area * {
+    color: #000 !important;
+    background-color: transparent !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .print-area pre,
+  .print-area pre *,
+  .print-area code {
+    background-color: #f6f6f6 !important;
+    font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace !important;
+  }
+
+  .print-area pre {
+    border: 1px solid #ddd !important;
+    /* Wrap long lines: on paper there is no horizontal scrolling to reveal them. */
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    font-size: 9.5pt !important;
+    break-inside: avoid;
+  }
+
+  .print-area :not(pre) > code {
+    padding: 1px 4px !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 2px !important;
+  }
+
+  .print-area h1,
+  .print-area h2,
+  .print-area h3,
+  .print-area h4 {
+    break-after: avoid;
+  }
+
+  .print-area li {
+    break-inside: avoid;
+  }
+
+  .print-hide,
+  .print-hide * {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}

@@ -1,27 +1,60 @@
-"""Request protection: in-memory rate limiting and request-size limits.
+"""Request protection: in-memory rate limiting, request-size limits and the daily quotas.
 
-Both are plain ASGI middleware. The rate limiter keeps its state in process memory, so with
-several worker processes each one enforces the limit separately, and a restart resets it.
+All are plain ASGI middleware. The rate limiter keeps its state in process memory, so with
+several worker processes each one enforces the limit separately, and a restart resets it. The
+quotas are stored in the database, so it survives restarts and is shared by workers.
 """
 
 import hashlib
 import hmac
+import json
 import logging
 import math
+import re
 import secrets
 import time
 from collections import deque
 from collections.abc import Callable
+from datetime import UTC, datetime
 
+from fastapi.responses import JSONResponse
 from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.errors import error_response
+from app.db.session import SessionFactory
+from app.errors import AppError, error_response
+from app.services.quota import (
+    AI_CALL_ACTION,
+    CLIENT_ID_HEADER,
+    TIMEZONE_HEADER,
+    UPLOAD_ACTION,
+    DayWindow,
+    QuotaContext,
+    count_usage,
+    current_day,
+    quota_context,
+    record_usage,
+    resolve_client_id,
+    resolve_timezone,
+)
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EXEMPT_PATHS = frozenset({"/api/health"})
+# Endpoints that create a document and therefore count toward the daily upload quota.
+UPLOAD_ROUTES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("POST", re.compile(r"^/api/documents(/code)?$")),
+)
+# Endpoints that may call the LLM. Study Mode's test scoring is deliberately absent: a
+# participant's test must never be blocked mid-experiment.
+AI_ROUTES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("POST", re.compile(r"^/api/documents/[^/]+/(summary|explanation|quiz|tutor)$")),
+    ("POST", re.compile(r"^/api/documents/[^/]+/topics/.+/reexplain$")),
+    ("POST", re.compile(r"^/api/documents/[^/]+/explainer/plan$")),
+    ("GET", re.compile(r"^/api/documents/[^/]+/explainer/sections/[^/]+$")),
+    ("POST", re.compile(r"^/api/quiz/[^/]+/answer$")),
+)
 
 
 class SlidingWindowLimiter:
@@ -84,11 +117,19 @@ class RateLimitMiddleware:
         app: ASGIApp,
         limiter: SlidingWindowLimiter,
         exempt_paths: frozenset[str] = DEFAULT_EXEMPT_PATHS,
+        path_limiters: dict[str, SlidingWindowLimiter] | None = None,
     ) -> None:
-        """Wrap ``app``; ``exempt_paths`` (e.g. the health check) are never limited."""
+        """Wrap ``app``; ``exempt_paths`` (e.g. the health check) are never limited.
+
+        ``path_limiters`` applies an *additional*, stricter limit to specific paths (exact
+        match), on top of the general ``limiter`` — a request to one of those paths is rejected
+        if it exceeds either limit. Everything not listed is governed by ``limiter`` alone, so
+        this is purely additive and does not change behavior for any existing route.
+        """
         self.app = app
         self._limiter = limiter
         self._exempt_paths = exempt_paths
+        self._path_limiters = path_limiters or {}
         # Client addresses are only ever used as keys after hashing with a per-process secret,
         # so they are neither stored in readable form nor logged.
         self._salt = secrets.token_bytes(16)
@@ -100,14 +141,15 @@ class RateLimitMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Apply the limit to HTTP requests."""
-        if (
-            scope["type"] != "http"
-            or scope["method"] == "OPTIONS"
-            or scope["path"] in self._exempt_paths
-        ):
+        path = scope.get("path", "")
+        if scope["type"] != "http" or scope["method"] == "OPTIONS" or path in self._exempt_paths:
             await self.app(scope, receive, send)
             return
-        retry_after = self._limiter.check(self._client_key(scope))
+        key = self._client_key(scope)
+        retry_after = self._limiter.check(key)
+        path_limiter = self._path_limiters.get(path)
+        if retry_after is None and path_limiter is not None:
+            retry_after = path_limiter.check(key)
         if retry_after is None:
             await self.app(scope, receive, send)
             return
@@ -148,7 +190,10 @@ class RequestSizeLimitMiddleware:
 
         declared = headers.get("content-length")
         if declared is not None and declared.isdigit() and int(declared) > limit:
-            response = error_response(413, "payload_too_large", details={"max_bytes": limit})
+            if is_upload:
+                response = error_response(413, "FILE_TOO_LARGE", details={"max_bytes": limit})
+            else:
+                response = error_response(413, "payload_too_large", details={"max_bytes": limit})
             await response(scope, receive, send)
             return
 
@@ -160,9 +205,113 @@ class RequestSizeLimitMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > limit:
-                    # HTTPException passes through FastAPI's body parsing (which would turn
-                    # other errors into a 400) and is rendered by the app's error handler.
+                    if is_upload:
+                        raise AppError(413, "FILE_TOO_LARGE", details={"max_bytes": limit})
                     raise HTTPException(status_code=413)
             return message
 
-        await self.app(scope, limited_receive, send)
+        try:
+            await self.app(scope, limited_receive, send)
+        except AppError as exc:
+            response = error_response(exc.status_code, exc.code, exc.message_key, exc.details)
+            await response(scope, receive, send)
+
+
+class QuotaMiddleware:
+    """Enforces the daily AI-call and upload quotas per client with ``429``.
+
+    Before a matching request runs, :meth:`check_quota` rejects it if that quota is used up.
+    Uploads are counted here once they succeed (``2xx``); AI calls are counted where they happen,
+    one per successful call to the provider (see :class:`app.llm.usage.UsageTrackingProvider`),
+    for the client this middleware binds to the request.
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        session_factory: SessionFactory,
+        daily_ai_requests: int,
+        daily_uploads: int,
+    ) -> None:
+        """Wrap ``app``; a limit of 0 disables that quota."""
+        self.app = app
+        self._session_factory = session_factory
+        self._limits = {AI_CALL_ACTION: daily_ai_requests, UPLOAD_ACTION: daily_uploads}
+
+    def _action_for(self, method: str, path: str) -> str | None:
+        for action, routes in ((UPLOAD_ACTION, UPLOAD_ROUTES), (AI_CALL_ACTION, AI_ROUTES)):
+            if self._limits[action] > 0 and any(
+                method == route_method and pattern.match(path) for route_method, pattern in routes
+            ):
+                return action
+        return None
+
+    def check_quota(self, user_id: str, action: str, day: DayWindow) -> JSONResponse | None:
+        """The ``429`` response if ``user_id`` has used up today's ``action`` quota, else None."""
+        with self._session_factory() as session:
+            used = count_usage(session, user_id, action, day.start)
+        limit = self._limits[action]
+        if used < limit:
+            return None
+        logger.info("quota_exceeded", extra={"action_type": action})
+        reset_at = day.reset_at.isoformat()
+        hours_remaining = day.hours_remaining()
+        envelope = error_response(
+            429,
+            "quota_exceeded",
+            details={
+                "quota": action,
+                "used": used,
+                "limit": limit,
+                "reset_at": reset_at,
+                "hours_remaining": hours_remaining,
+            },
+        ).body
+        # The reset time is repeated at the top level for clients that read it directly.
+        return JSONResponse(
+            {**json.loads(envelope), "reset_at": reset_at, "hours_remaining": hours_remaining},
+            status_code=429,
+            headers={"Retry-After": str(_seconds_until(day.reset_at))},
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Enforce the quotas on matching HTTP requests."""
+        action = (
+            self._action_for(scope["method"], scope.get("path", ""))
+            if scope["type"] == "http"
+            else None
+        )
+        if action is None:
+            await self.app(scope, receive, send)
+            return
+
+        headers = Headers(scope=scope)
+        user_id = resolve_client_id(headers.get(CLIENT_ID_HEADER))
+        day = current_day(resolve_timezone(headers.get(TIMEZONE_HEADER)))
+        rejection = self.check_quota(user_id, action, day)
+        if rejection is not None:
+            await rejection(scope, receive, send)
+            return
+
+        if action == AI_CALL_ACTION:
+            with quota_context(QuotaContext(user_id, self._session_factory)):
+                await self.app(scope, receive, send)
+            return
+
+        succeeded = False
+
+        async def tracking_send(message: Message) -> None:
+            nonlocal succeeded
+            if message["type"] == "http.response.start":
+                succeeded = 200 <= message["status"] < 300
+            await send(message)
+
+        await self.app(scope, receive, tracking_send)
+        if succeeded:
+            with self._session_factory() as session:
+                record_usage(session, user_id, UPLOAD_ACTION)
+
+
+def _seconds_until(moment: datetime) -> int:
+    """Whole seconds from now until ``moment``, at least 1."""
+    return max(1, math.ceil((moment - datetime.now(UTC)).total_seconds()))

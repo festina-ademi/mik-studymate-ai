@@ -4,4 +4,4 @@ Part of every cache key, so changing a template without bumping this value would
 stale cached answers. ``tests/test_prompts.py`` fails when the templates change, as a reminder.
 """
 
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "24"

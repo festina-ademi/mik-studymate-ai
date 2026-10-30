@@ -1,0 +1,44 @@
+# Local, single-machine run of the whole stack. See README.md for `npm run dev` / `uvicorn
+# --reload` local development instead (faster iteration, no image rebuilds); use this to try the
+# app the way it will actually be deployed, or as a quick demo. See docs/DEPLOYMENT.md for
+# deploying the two services to separate free-tier hosts instead of one machine.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - '8000:8000'
+    volumes:
+      - backend-data:/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '5173:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  # Everything mutable the backend writes (SQLite file, Chroma vector store, uploads, TTS cache).
+  # Named volumes like this are the "local demo" answer to persistence; a real free-tier host's
+  # disk is typically ephemeral, which is why docs/DEPLOYMENT.md has production use a managed
+  # Postgres database instead (via DATABASE_URL) rather than relying on a volume at all.
+  backend-data:

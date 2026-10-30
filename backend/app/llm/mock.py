@@ -68,6 +68,7 @@ class MockProvider(LLMProvider):
         *,
         model: str = "mock-model",
         chunk_size: int = 16,
+        schema_responses: dict[str, str] | None = None,
         **kwargs: Any,  # noqa: ANN401 - forwarded to LLMProvider
     ) -> None:
         """Create the provider.
@@ -76,12 +77,20 @@ class MockProvider(LLMProvider):
             responses: Answers (or exceptions to raise) consumed one per attempt, in order.
             model: Model name reported by the provider.
             chunk_size: Characters per streamed piece.
+            schema_responses: Optional ``{schema class name: raw JSON text}`` map, checked before
+                ``responses``/the default sampler on every ``generate_json`` call. Unlike
+                ``responses``, it is keyed by the requested schema rather than call order, so it
+                stays correct across a whole realistic multi-step flow (e.g. the Playwright e2e
+                test, wired up via ``MOCK_LLM_FIXTURES_PATH``) regardless of exactly how many
+                times each schema is requested or in what order — a request for a schema with no
+                entry here falls through to ``responses``/the default sampler as usual.
             **kwargs: Forwarded to :class:`LLMProvider`; ``sleep`` defaults to a no-op.
         """
         kwargs.setdefault("sleep", _no_sleep)
         super().__init__(model, **kwargs)
         self._script: deque[str | Exception] = deque(responses)
         self._chunk_size = chunk_size
+        self._schema_responses = schema_responses or {}
         self.calls: list[LLMRequest] = []
 
     def enqueue(self, *responses: str | Exception) -> None:
@@ -98,6 +107,9 @@ class MockProvider(LLMProvider):
             yield text[start : start + self._chunk_size]
 
     async def _generate_json_text(self, request: LLMRequest, schema: type[BaseModel]) -> str:
+        if schema.__name__ in self._schema_responses:
+            self.calls.append(request)
+            return self._schema_responses[schema.__name__]
         return self._next(
             request, lambda: json.dumps(sample_from_schema(schema.model_json_schema()))
         )

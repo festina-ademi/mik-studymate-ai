@@ -14,6 +14,8 @@ interface SegmentedControlProps<T extends string> {
   options: readonly SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Id of an element (e.g. a tooltip) that describes the whole group. */
+  describedBy?: string;
 }
 
 /** A compact single-choice control made of toggle buttons. */
@@ -22,6 +24,7 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  describedBy,
 }: SegmentedControlProps<T>) {
   const indicatorId = useId();
 
@@ -29,7 +32,8 @@ export function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="inline-flex items-center gap-1 rounded-xl bg-surface-muted p-1"
+      aria-describedby={describedBy}
+      className="inline-flex items-center gap-1 rounded-2xl border border-border bg-surface-muted/90 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -42,14 +46,14 @@ export function SegmentedControl<T extends string>({
             onClick={() => {
               onChange(option.value);
             }}
-            className={`relative rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`relative rounded-xl px-2.5 py-1.5 text-sm font-medium transition-all duration-200 sm:px-3 ${
               active ? 'text-fg' : 'text-fg-muted hover:text-fg'
             }`}
           >
             {active && (
               <motion.span
                 layoutId={indicatorId}
-                className="absolute inset-0 rounded-lg bg-surface shadow-soft ring-1 ring-border"
+                className="absolute inset-0 rounded-xl bg-surface shadow-soft ring-1 ring-border/80"
                 transition={{ type: 'spring', duration: 0.3, bounce: 0.15 }}
               />
             )}

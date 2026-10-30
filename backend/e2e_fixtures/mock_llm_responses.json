@@ -1,0 +1,55 @@
+{
+  "_SectionSummary": {
+    "summary": "Binary search finds a value in a sorted array by repeatedly dividing the search interval in half.",
+    "references": ["Page 1"]
+  },
+  "_SummaryDraft": {
+    "overview": "This document explains binary search, an efficient algorithm that finds a value in a sorted array by repeatedly dividing the search interval in half.",
+    "key_concepts": [
+      {
+        "term": "Binary search",
+        "definition": "An algorithm that finds a value in a sorted array by repeatedly dividing the search interval in half.",
+        "references": ["Page 1"]
+      }
+    ],
+    "takeaways": [
+      {
+        "title": "Efficient searching",
+        "text": "Binary search is much faster than checking every element one by one.",
+        "references": ["Page 1"]
+      }
+    ],
+    "confidence_notes": []
+  },
+  "_ExplanationDraft": {
+    "sections": [
+      {
+        "title": "How binary search works",
+        "content": "Binary search finds a value in a sorted array by repeatedly dividing the search interval in half and comparing the target value to the middle element.",
+        "references": ["Page 1"]
+      }
+    ],
+    "confidence_notes": []
+  },
+  "QuizSetDraft": {
+    "questions": [
+      {
+        "kind": "multiple_choice",
+        "topic": "Binary search",
+        "difficulty": "medium",
+        "question": "What does binary search repeatedly divide in half?",
+        "options": ["The search interval", "The file size", "The network speed", "The memory limit"],
+        "correct_answer": "The search interval",
+        "explanation": "Binary search repeatedly divides the search interval in half.",
+        "source_reference": "Page 1",
+        "rubric": null,
+        "key_points": []
+      }
+    ],
+    "weak_topics": []
+  },
+  "_TutorAnswerDraft": {
+    "answer": "Binary search repeatedly divides the search interval in half to quickly find a value in a sorted array [Page 1].",
+    "follow_up_questions": ["What is the time complexity of binary search?"]
+  }
+}
