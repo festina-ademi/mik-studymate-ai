@@ -86,7 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         engine.dispose()
 
-    app = FastAPI(title=" MIK-StudyMate AI", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="MIK – StudyMate AI", version=__version__, lifespan=lifespan)
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)

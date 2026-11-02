@@ -1,4 +1,10 @@
-# MIK
+# MIK – StudyMate AI
+
+[![CI](https://github.com/festina-ademi/mik-studymate-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/festina-ademi/mik-studymate-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![React 19 + TypeScript](https://img.shields.io/badge/React_19-TypeScript-3178C6?logo=react&logoColor=white)
 
 A bilingual (Albanian / English) AI learning assistant for Computer Science students. Students
 upload lecture material or source code and get level-adapted summaries and explanations, a
@@ -26,15 +32,13 @@ specification is in [PROJECT_SPEC.md](PROJECT_SPEC.md).
 
 ## Screenshots
 
-_Placeholders: add images to `docs/screenshots/` and link them here._
+| Landing page                                   | Workspace                                    | Explainer Mode                               |
+| ---------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| ![Landing page](docs/screenshots/landing.png) | ![Workspace](docs/screenshots/workspace.png) | ![Explainer Mode](docs/screenshots/explainer.png) |
 
-| Landing page | Workspace | Explainer Mode |
-| ------------ | --------- | -------------- |
-| _(image)_    | _(image)_ | _(image)_      |
-
-| Quiz results | Admin dashboard |
-| ------------ | --------------- |
-| _(image)_    | _(image)_       |
+| Quiz results                                 | Admin dashboard                      |
+| -------------------------------------------- | ------------------------------------ |
+| ![Quiz results](docs/screenshots/quiz.png)   | ![Admin dashboard](docs/screenshots/admin.png) |
 
 ## Architecture
 
@@ -189,7 +193,9 @@ frontend with `LLM_PROVIDER=mock` and `EMBEDDING_PROVIDER=hash`, so it is determ
 no API key. It covers upload → summary → quiz → tutor citation → language switch, plus a Study
 Mode smoke test.
 
-## Thesis objectives
+## Project objectives
+
+The project was built as a thesis; each objective maps to concrete code.
 
 | #   | Objective                                                  | Where it is implemented                                                                           |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -207,21 +213,26 @@ The UI language (`sq` or `en`) is chosen with the SQ | EN toggle and saved. All 
 ## Documentation
 
 [STUDY_PROTOCOL.md](docs/STUDY_PROTOCOL.md) · [SECURITY.md](docs/SECURITY.md) ·
-[DEPLOYMENT.md](docs/DEPLOYMENT.md)
+[DEPLOYMENT.md](docs/DEPLOYMENT.md) · interactive API docs (Swagger) at `/docs` on a running
+backend
 
 ## Known limitations
 
-- Docker images are written but were not built or run in the final session.
+- The Dockerfiles and `docker-compose.yml` are provided but not yet verified end to end; the
+  local setup above is the tested path.
 - Free-tier hosting has ephemeral disks: use Postgres, and re-index documents (the Chroma index)
   after a redeploy unless a persistent disk is attached.
 - The hash embedding provider and mock LLM exist for tests only; real quality needs a real model.
-- The app palette is warm amber/cream rather than the indigo/violet named in the spec (an
-  earlier-phase design choice); light-theme borders are lighter than WCAG's 3:1 non-text contrast.
+- Light-theme borders are lighter than WCAG's 3:1 non-text contrast.
 - `npm audit` is clean, but `pip-audit` reports advisories in `chromadb` (server mode, not used)
   and `torch` (needs an untrusted checkpoint); see [SECURITY.md](docs/SECURITY.md).
 - The admin login limiter is global, not per-IP; admin cookies need a single site (see
   DEPLOYMENT.md).
-- The main JS bundle is still about 405 KB gzipped (syntax highlighter); admin/charts and
-  Explainer are split out.
+- The main JS bundle is about 490 KB gzipped, mostly the syntax highlighter; the admin
+  dashboard, charts and Explainer Mode are already split into separate chunks.
 - Short-answer grading by the LLM and scanned-PDF OCR are not covered by automated tests with a
   real model.
+
+## License
+
+Released under the [MIT License](LICENSE).
