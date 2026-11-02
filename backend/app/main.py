@@ -90,14 +90,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
-    app.state.llm_provider = None 
-    app.state.embedding_provider = None  
-    app.state.vector_store = None  
-    app.state.tts_provider = None 
+    app.state.llm_provider = None
+    app.state.embedding_provider = None
+    app.state.vector_store = None
+    app.state.tts_provider = None
 
     register_exception_handlers(app)
 
- 
     app.add_middleware(
         QuotaMiddleware,
         session_factory=app.state.session_factory,
@@ -115,7 +114,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             limiter=SlidingWindowLimiter(
                 settings.rate_limit_requests, settings.rate_limit_window_seconds
             ),
-            
             path_limiters={
                 "/api/tts/synthesize": SlidingWindowLimiter(
                     TTS_SYNTHESIZE_RATE_LIMIT_PER_MINUTE, 60.0

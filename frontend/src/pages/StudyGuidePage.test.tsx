@@ -12,8 +12,10 @@ describe('Study Mode guide', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Study Mode' })).toBeVisible();
     expect(screen.getByText('Learn the most effective way with MIK')).toBeVisible();
 
-    const steps = screen.getByRole('heading', { name: 'How to study with MIK in 4 steps' })
-      .parentElement as HTMLElement;
+    const steps = screen.getByRole('heading', {
+      name: 'How to study with MIK in 4 steps',
+    }).parentElement;
+    if (!steps) throw new Error('the steps heading has no section around it');
     expect(within(steps).getAllByRole('listitem')).toHaveLength(4);
     for (const title of [
       'Upload your material',
@@ -25,8 +27,8 @@ describe('Study Mode guide', () => {
       expect(within(steps).getByRole('heading', { name: new RegExp(title) })).toBeInTheDocument();
     }
 
-    const tips = screen.getByRole('heading', { name: 'Tips for effective studying' })
-      .parentElement as HTMLElement;
+    const tips = screen.getByRole('heading', { name: 'Tips for effective studying' }).parentElement;
+    if (!tips) throw new Error('the tips heading has no section around it');
     expect(within(tips).getAllByRole('listitem')).toHaveLength(5);
   });
 
