@@ -11,12 +11,11 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    env:
-      LLM_PROVIDER: mock
-      EMBEDDING_PROVIDER: hash
+    # No LLM/embedding env vars here: tests/conftest.py already uses the mock provider, and
+    # tests/test_config.py asserts the real defaults, which such variables would override.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: pip
@@ -34,8 +33,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
