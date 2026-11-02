@@ -141,8 +141,7 @@
     },
     "footer": {
       "credit": "Festina Ademi · 2026"
-    },
-    "TODO(copy-review)": "Albanian copy written from scratch, please review: hero.subtitle, problem.two.text, problem.three.text, features.*.text, how.*.text, audience.*, closing.text"
+    }
   },
   "notFound": {
     "title": "Page not found",
@@ -151,6 +150,10 @@
   },
   "workspace": {
     "title": "Workspace",
+    "pageLabel": "Page {{number}}",
+    "slideLabel": "Slide {{number}}",
+    "noCodeChunks": "No code chunks available",
+    "noSummary": "No summary available yet.",
     "originalMaterial": "Original material",
     "filePreview": "File preview",
     "previousPage": "Previous section",

@@ -141,8 +141,7 @@
     },
     "footer": {
       "credit": "Festina Ademi · 2026"
-    },
-    "TODO(copy-review)": "Albanian copy written from scratch, please review: hero.subtitle, problem.two.text, problem.three.text, features.*.text, how.*.text, audience.*, closing.text"
+    }
   },
   "notFound": {
     "title": "Faqja nuk u gjet",
@@ -151,6 +150,10 @@
   },
   "workspace": {
     "title": "Hapësira e punës",
+    "pageLabel": "Faqja {{number}}",
+    "slideLabel": "Sllajdi {{number}}",
+    "noCodeChunks": "Nuk ka pjesë kodi në dispozicion",
+    "noSummary": "Ende nuk ka përmbledhje.",
     "originalMaterial": "Materiali origjinal",
     "filePreview": "Paraqitja e skedarit",
     "previousPage": "Seksioni i mëparshëm",

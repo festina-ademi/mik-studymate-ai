@@ -228,13 +228,18 @@ export function WorkspacePage({ onTabChange, onQuizAttempt }: WorkspacePageProps
         const number = chunk.page_start ?? index + 1;
         groups.set(number, [...(groups.get(number) ?? []), chunk.text]);
       });
-      return Array.from(groups, ([number, texts]) => ({
-        id: `${prefix}-${doc.id}-${String(number)}`,
-        label: `${prefix === 'slide' ? 'Slide' : 'Page'} ${String(number)}`,
-        title: `${prefix === 'slide' ? 'Slide' : 'Page'} ${String(number)}`,
-        text: texts.join('\n\n'),
-        lineStart: null,
-      }));
+      return Array.from(groups, ([number, texts]) => {
+        const label = t(prefix === 'slide' ? 'workspace.slideLabel' : 'workspace.pageLabel', {
+          number,
+        });
+        return {
+          id: `${prefix}-${doc.id}-${String(number)}`,
+          label,
+          title: label,
+          text: texts.join('\n\n'),
+          lineStart: null,
+        };
+      });
     }
     const chunks = readJsonStorage<ChunkRecord[]>(STORAGE_KEYS.chunksState) ?? [];
     if (chunks.length === 0) {
@@ -243,7 +248,7 @@ export function WorkspacePage({ onTabChange, onQuizAttempt }: WorkspacePageProps
           id: `${doc.id}-file`,
           label: 'main',
           title: doc.filename,
-          text: 'No code chunks available',
+          text: t('workspace.noCodeChunks'),
           lineStart: null,
         },
       ];
@@ -259,7 +264,7 @@ export function WorkspacePage({ onTabChange, onQuizAttempt }: WorkspacePageProps
         lineStart: chunk.line_start,
       };
     });
-  }, [currentDocument]);
+  }, [currentDocument, t]);
 
   useEffect(() => {
     if (currentDocument == null) {
@@ -311,7 +316,7 @@ export function WorkspacePage({ onTabChange, onQuizAttempt }: WorkspacePageProps
           });
           if (isCancelled()) return;
           setSummary({
-            text: summaryResponse.overview || 'No summary available yet.',
+            text: summaryResponse.overview || t('workspace.noSummary'),
             raw: JSON.stringify(summaryResponse),
             object: summaryResponse,
           });
