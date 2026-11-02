@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -9,8 +9,13 @@ describe('Study Mode guide', () => {
     stubFetch({});
     renderApp('/study');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Study Mode' })).toBeVisible();
-    expect(screen.getByText('Learn the most effective way with MIK')).toBeVisible();
+    // The hero fades in on mount, so on a slow machine (CI) it can still be at opacity 0 when it
+    // is first found: wait for the animation to finish instead of checking once.
+    const title = await screen.findByRole('heading', { level: 1, name: 'Study Mode' });
+    await waitFor(() => {
+      expect(title).toBeVisible();
+      expect(screen.getByText('Learn the most effective way with MIK')).toBeVisible();
+    });
 
     const steps = screen.getByRole('heading', {
       name: 'How to study with MIK in 4 steps',

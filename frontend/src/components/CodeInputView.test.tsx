@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -72,6 +72,17 @@ describe('CodeInputView', () => {
     await user.click(textarea);
     await user.keyboard('abc');
     await user.keyboard('{Tab}');
+    // The component restores the cursor in a requestAnimationFrame after Tab. Wait for one
+    // frame (queued after the component's, so it runs second) before typing on: otherwise, on
+    // a slow machine, the cursor reset can land mid-typing and scramble "def".
+    await act(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        }),
+    );
     await user.keyboard('def');
 
     expect(textarea.value).toBe('abc  def');
